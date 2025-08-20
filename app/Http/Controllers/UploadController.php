@@ -48,7 +48,7 @@ class UploadController extends Controller
      */
     public function tampiltabel()
     {
-        // Ambil path dari session
+        
         $path = session('uploaded_puml_path');
         if (!$path) {
             return redirect()->route('upload.form')->with('error', 'Tidak ada file yang diunggah.');

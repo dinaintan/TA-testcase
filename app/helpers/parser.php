@@ -8,8 +8,7 @@ if (!function_exists('parsePumlToJson')) {
         }
 
         $lines = file($fullPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-
-        // 1. Fase Parsing: Membangun daftar node dan dependensi
+        
         $nodes = [];
         $idCounter = 0;
         $lastId = null;
@@ -26,6 +25,7 @@ if (!function_exists('parsePumlToJson')) {
             $state = '';
             $activityName = '';
             $currentDependency = null;
+            $nodeCreated = false;
 
             if (strtolower($line) === 'start') {
                 $state = 'StartState';
@@ -33,65 +33,61 @@ if (!function_exists('parsePumlToJson')) {
                 $idCounter++;
                 $currentDependency = 0;
                 $lastId = $idCounter;
+                $nodeCreated = true;
+            }
 
-            } elseif (strtolower($line) === 'stop') {
+            if (strtolower($line) === 'stop') {
                 $state = 'EndState';
                 $activityName = 'stop';
                 $idCounter++;
+                $currentDependency = empty($branchStack) ? $lastId : $lastId;
                 if (!empty($branchStack)) {
-                    $currentDependency = $lastId;
                     $branchStack[count($branchStack) - 1]['ends'][] = $lastId;
-                } else {
-                    $currentDependency = $lastId;
                 }
                 $lastId = $idCounter;
+                $nodeCreated = true;
+            }
 
-            } elseif (preg_match('/^if\s*\((.*)\)\s*then/i', $line, $matches)) {
+            if (preg_match('/^if\s*\((.*)\)\s*then/i', $line, $matches)) {
                 $state = 'DecisionState';
                 $activityName = trim($matches[1]);
                 $idCounter++;
-                
                 $currentDependency = $lastId;
                 $lastId = $idCounter;
-
-                $branchStack[] = [
-                    'decisionId' => $lastId,
-                    'ends' => []
-                ];
+                $branchStack[] = ['decisionId' => $lastId, 'ends' => []];
                 $currentPathDependencies[] = $lastId;
-                
-            } elseif (strtolower($line) === 'else') {
+                $nodeCreated = true;
+            }
+
+            if (strtolower($line) === 'else') {
                 if ($lastId && !empty($branchStack)) {
                     $branchStack[count($branchStack) - 1]['ends'][] = $lastId;
                 }
                 $lastId = end($branchStack)['decisionId'];
                 continue;
+            }
 
-            } elseif (strtolower($line) === 'endif') {
+            if (strtolower($line) === 'endif') {
                 if ($lastId && !empty($branchStack)) {
                     $branchStack[count($branchStack) - 1]['ends'][] = $lastId;
                 }
                 $ended = array_pop($branchStack);
                 $currentDependency = $ended['ends'];
                 $lastId = null;
-                
-                // Hapus dependensi percabangan yang sudah selesai
                 array_pop($currentPathDependencies);
+                continue;
+            }
 
-            } elseif (preg_match('/^:(.*);$/', $line, $matches)) {
+            if (preg_match('/^:(.*);$/', $line, $matches)) {
                 $state = 'ActivityState';
                 $activityName = trim($matches[1]);
                 $idCounter++;
-                
-                if (!empty($branchStack)) {
-                    $currentDependency = end($branchStack)['decisionId'];
-                } else {
-                    $currentDependency = $lastId;
-                }
+                $currentDependency = empty($branchStack) ? $lastId : end($branchStack)['decisionId'];
                 $lastId = $idCounter;
+                $nodeCreated = true;
             }
 
-            if (!empty($state)) {
+            if ($nodeCreated) {
                 $node = [
                     'id' => $idCounter,
                     'activity_name' => $activityName,
@@ -102,7 +98,7 @@ if (!function_exists('parsePumlToJson')) {
             }
         }
         
-        // 2. Fase Pembuatan Graf: Mengubah daftar node menjadi struktur graf
+        // Fase 2, 3, 4 tetap sama
         $graph = [];
         $nodeMap = [];
         foreach ($nodes as $node) {
@@ -111,16 +107,15 @@ if (!function_exists('parsePumlToJson')) {
             
             if (is_array($dependency)) {
                 foreach ($dependency as $depId) {
-                    if (!isset($graph[$depId])) $graph[$depId] = [];
+                    $graph[$depId] = $graph[$depId] ?? [];
                     $graph[$depId][] = $node['id'];
                 }
             } elseif ($dependency !== null) {
-                if (!isset($graph[$dependency])) $graph[$dependency] = [];
+                $graph[$dependency] = $graph[$dependency] ?? [];
                 $graph[$dependency][] = $node['id'];
             }
         }
 
-        // 3. Fase Penelusuran Jalur: Mencari semua jalur lengkap
         $allPaths = [];
         $rootNodes = array_filter($nodes, function($n) {
             return $n['dependency'] === 0;
@@ -130,7 +125,6 @@ if (!function_exists('parsePumlToJson')) {
             findPathsRecursive($root['id'], $graph, [], $allPaths);
         }
         
-        // 4. Fase Output: Memformat jalur menjadi data yang mudah dibaca
         $formattedPaths = [];
         foreach ($allPaths as $path) {
             $formattedPath = [];
@@ -148,10 +142,11 @@ if (!function_exists('parsePumlToJson')) {
 
         if (!isset($graph[$nodeId])) {
             $allPaths[] = $currentPath;
-        } else {
-            foreach ($graph[$nodeId] as $nextNodeId) {
-                findPathsRecursive($nextNodeId, $graph, $currentPath, $allPaths);
-            }
+            return; // Menggunakan early return untuk mengakhiri fungsi
+        }
+        
+        foreach ($graph[$nodeId] as $nextNodeId) {
+            findPathsRecursive($nextNodeId, $graph, $currentPath, $allPaths);
         }
     }
 }

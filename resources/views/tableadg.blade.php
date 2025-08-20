@@ -107,7 +107,7 @@
     <div id="graph"></div>
     
     <div class="button-container">
-        <button onclick="window.location.href='test_cases_page.php';">Generate Test Case</button>
+        <button onclick="window.location.href='hasil_kasus_uji';">Generate Test Case</button>
     </div>
 
     <script>

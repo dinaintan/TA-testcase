@@ -17,4 +17,5 @@ Route::post('/upload', [UploadController::class, 'proses'])->name('upload');
 Route::get('/tableadt', [UploadController::class, 'tampiltabel'])->name('tableadt');
 Route::get('/tableadg', [UploadController::class, 'tampilgraph'])->name('tableadg');
 
+
 require __DIR__.'/auth.php';
