@@ -82,6 +82,9 @@
                 <input type="file" name="puml_file" required class="form-control" style="max-width: 600px; flex-grow: 1;">
                 <button type="submit" class="btn" style="white-space: nowrap; width: auto; background-color: #3578a8; color: white; border: none;">Proses</button>
               </div>
+              @error('puml_file')
+              <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
             </form>
             @if (session('success'))
               <div class="alert alert-success mt-3">

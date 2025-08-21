@@ -25,7 +25,7 @@ class UploadController extends Controller
             'puml_file' => 'required|file'
         ]);
 
-        // Pastikan file berekstensi .puml
+        
         $ext = strtolower($request->file('puml_file')->getClientOriginalExtension());
         if ($ext !== 'puml') {
             return back()
