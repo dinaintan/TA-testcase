@@ -81,13 +81,14 @@
     <table>
         <thead>
             <tr>
-                <th>Activity Name</th>
+                <th>Activity </th>
                 <th>Dependency</th>
                 <th>ID</th>
             </tr>
         </thead>
         <tbody>
-            @foreach ($data as $row)
+{{-- {{ dd($data); }} --}}
+            @foreach ($data[0] as $row)
             <tr>
                 <td>{{ $row['activity_name'] }}</td>
                 <td>

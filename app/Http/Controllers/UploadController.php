@@ -85,4 +85,8 @@ class UploadController extends Controller
 
         return view('tableadg', ['data' => $data]);
     }
+    public function hasil()
+    {
+        return view('hasil_kasus_uji');
+    }
 }

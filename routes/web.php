@@ -11,6 +11,7 @@ Route::get('/', function () {
 // Halaman upload file
 // Cukup definisikan satu rute GET untuk /upload yang mengarah ke controller
 Route::get('/upload', [UploadController::class, 'index'])->name('upload.form');
+Route::get('/hasil_kasus_uji', [UploadController::class, 'hasil'])->name('hasil');
 
 // Proses parsing dan menampilkan tabel ADT
 Route::post('/upload', [UploadController::class, 'proses'])->name('upload');
